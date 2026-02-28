@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigenère Cipher Decoder</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface2: #0f3460;
+    --accent: #e94560;
+    --accent2: #533483;
+    --text: #eee;
+    --text-muted: #aab;
+    --mono: "Courier New", Courier, monospace;
+    --sans: system-ui, -apple-system, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 0.25rem;
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .panel {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .panel h2 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: var(--accent);
+  }
+
+  textarea {
+    width: 100%;
+    height: 140px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    resize: vertical;
+  }
+
+  textarea:focus { outline: 1px solid var(--accent); }
+
+  .btn {
+    display: inline-block;
+    padding: 0.6rem 1.4rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: transform 0.1s, opacity 0.2s;
+    color: #fff;
+  }
+
+  .btn:hover { opacity: 0.9; }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+  }
+
+  .btn-secondary {
+    background: var(--surface2);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .key-length-results {
+    margin-top: 1rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  th, td {
+    padding: 0.4rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  th {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  tr.selected {
+    background: rgba(233, 69, 96, 0.15);
+  }
+
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover { background: rgba(255,255,255,0.03); }
+
+  .bar-container {
+    width: 100%;
+    height: 14px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 3px;
+    transition: width 0.3s;
+  }
+
+  .freq-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .freq-position {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .freq-position h3 {
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+  }
+
+  .freq-position .best-shift {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .freq-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    height: 60px;
+    margin-top: 0.5rem;
+  }
+
+  .freq-bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .freq-bar {
+    width: 100%;
+    background: var(--surface2);
+    border-radius: 2px 2px 0 0;
+    min-height: 1px;
+  }
+
+  .freq-bar.highlight {
+    background: var(--accent);
+  }
+
+  .freq-label {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+  }
+
+  .key-display {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--bg);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .key-display label {
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .key-display input {
+    flex: 1;
+    min-width: 120px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .key-display input:focus { outline: 1px solid var(--accent); }
+
+  #output {
+    background: var(--bg);
+    min-height: 100px;
+  }
+
+  .hidden { display: none !important; }
+
+  .info {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  .step-indicator {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    justify-content: center;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .step.active { color: var(--accent); }
+  .step.done { color: #4ade80; }
+
+  .step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 2px solid currentColor;
+  }
+
+  .step.done .step-num { background: #4ade80; color: var(--bg); border-color: #4ade80; }
+  .step.active .step-num { border-color: var(--accent); }
+
+  .step-line {
+    width: 40px;
+    height: 2px;
+    background: rgba(255,255,255,0.1);
+    align-self: center;
+  }
+
+  .chi-details {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Vigenère Cipher Decoder</h1>
+  <p class="subtitle">Crack Vigenère ciphers with unknown keys using frequency analysis</p>
+
+  <div class="step-indicator">
+    <div class="step active" id="step1"><span class="step-num">1</span> Input</div>
+    <div class="step-line"></div>
+    <div class="step" id="step2"><span class="step-num">2</span> Key Length</div>
+    <div class="step-line"></div>
+    <div class="step" id="step3"><span class="step-num">3</span> Key Recovery</div>
+    <div class="step-line"></div>
+    <div class="step" id="step4"><span class="step-num">4</span> Decrypted Text</div>
+  </div>
+
+  <!-- Step 1: Input -->
+  <div class="panel" id="panel-input">
+    <h2>Ciphertext</h2>
+    <textarea id="ciphertext" placeholder="Paste your Vigenère-encrypted text here...">VVHQWVVRHMUSGJGTHKIHTSSEJCHLSFCBGVWCRLRYQTFSVGAHWKCUHWAUGLQHNSLRLJSHBLTSPISPRDXLJSVEEGHLQWKASSKUWEPWQTWVSPGOELKCQYFNSVWLJSNIQKGNRGYBWLWGOVHKNCHQISHTSJQCFBSSMSHRZHDSYCJRCMTSRSZBCGPSVKRQZTQIHLCGEHMSLLZZQCSUMMVLSRQZUQCALQWZCLRLUHSISURISLAJQHFESCUHWBCGQHCIDSCISVHEBLQHKHSSLFIRMTREYGHKSCBHWCRLFFGSIRCZHSHTTHSBSDHQCZSKQRZHHRQBSVVFRYLSJSCDHQCOSUEBSMJCMZUHKFIQILCHRUHLZCXLYSHFFSQCSSVLSHUQIZJEURQHSFRGQLCZHSHTJCFBSSMSHRZHDSYCJRCMTSRSZBCHQUSXFULXZZHKFIQILCJSZEVQCLZRVCZLRRQWZVLRHSJHCQSHTBSSHQFZQVFMUSMSJCFKWSRZHKCRULRLRYSRRZKBHWCRLHZHDSYCJSVEEGHLQWKCRQTVQHDVVDQCTQWSHFTUHVSJLLQJHFESCUHWBCGQHCISEVQIQWSTDJCQSZUVEGHLQWKAURQHSBLHBQVVRZKLYEBLQHKHSZKFSNLRMVLDSXLSUURQZSFJRZHSHFQELHLUMRLZHSHQIUKVCUECSPLCHQHUCMQCCNRHQXLQHKSHVZKLYEBLQHKHSSFIRMTRHSUISATQIRDCHSUIZQBZQHUZRALQHKHLFLQWKSSHMIRZHSHIIIREYGHQCZSTVHCRLHYHHQMSLFLQFFCRZHSHTTHFIRJHFZQVSSMLJSGHLQFKHBVHEKQILLHSHLLQJHFESCUHWAUGLQHNSLRLHDVSSILYHBLQHKHSSFLSHMSHDRZHDSYCJBCHRIIBGJKEKQELLHXJCMZUHKSPYIRSLLRLWZQFDATQHIQMZFLQFFCRZHKCRJCFBSSMSHRZHDSYCJRCMTSRSZBCHQGFLSFTQIPHMLFMHIRQCVRRZJQFZQVLRTQIFSGBJRHQEBURQCZSVEWVHCGQI</textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="analyzeKeyLength()">Analyze Key Length</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Key Length Analysis -->
+  <div class="panel hidden" id="panel-keylength">
+    <h2>Key Length Analysis</h2>
+    <p class="info">Candidates ranked by Index of Coincidence (IoC). English text has IoC ≈ 0.0667. Click a row to select that key length.</p>
+    <div class="key-length-results" id="keylength-results"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="recoverKey()">Recover Key</button>
+      <button class="btn btn-secondary" onclick="resetAll()">Start Over</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Key Recovery -->
+  <div class="panel hidden" id="panel-key">
+    <h2>Key Recovery via Frequency Analysis</h2>
+    <p class="info">Each position shows the best-fit shift by minimizing chi-squared against English letter frequencies. You can manually edit the recovered key below.</p>
+    <div class="freq-grid" id="freq-grid"></div>
+    <div class="key-display">
+      <label>Recovered Key:</label>
+      <input type="text" id="key-input" oninput="decryptWithKey()">
+      <button class="btn btn-primary" onclick="decryptWithKey()">Decrypt</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Output -->
+  <div class="panel hidden" id="panel-output">
+    <h2>Decrypted Text</h2>
+    <textarea id="output" readonly></textarea>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="copyOutput()">Copy to Clipboard</button>
+      <button class="btn btn-secondary" onclick="resetAll()">Start Over</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// English letter frequencies (A-Z)
+const ENGLISH_FREQ = [
+  0.08167, 0.01492, 0.02782, 0.04253, 0.12702, 0.02228,
+  0.02015, 0.06094, 0.06966, 0.00153, 0.00772, 0.04025,
+  0.02406, 0.06749, 0.07507, 0.01929, 0.00095, 0.05987,
+  0.06327, 0.09056, 0.02758, 0.00978, 0.02360, 0.00150,
+  0.01974, 0.00074
+];
+
+let selectedKeyLength = null;
+let cleanCiphertext = "";
+
+/**
+ * Strip non-alpha characters and uppercase.
+ */
+function cleanText(text) {
+  return text.replace(/[^A-Za-z]/g, "").toUpperCase();
+}
+
+/**
+ * Compute Index of Coincidence for a string of uppercase letters.
+ */
+function indexOfCoincidence(text) {
+  const n = text.length;
+  if (n < 2) return 0;
+  const counts = new Array(26).fill(0);
+  for (let i = 0; i < n; i++) {
+    counts[text.charCodeAt(i) - 65]++;
+  }
+  let sum = 0;
+  for (let i = 0; i < 26; i++) {
+    sum += counts[i] * (counts[i] - 1);
+  }
+  return sum / (n * (n - 1));
+}
+
+/**
+ * Split ciphertext into `keyLen` groups (every keyLen-th character).
+ */
+function splitIntoGroups(text, keyLen) {
+  const groups = Array.from({ length: keyLen }, () => []);
+  for (let i = 0; i < text.length; i++) {
+    groups[i % keyLen].push(text[i]);
+  }
+  return groups.map(g => g.join(""));
+}
+
+/**
+ * Average IoC across all groups for a given key length.
+ */
+function averageIoC(text, keyLen) {
+  const groups = splitIntoGroups(text, keyLen);
+  let total = 0;
+  for (const g of groups) {
+    total += indexOfCoincidence(g);
+  }
+  return total / keyLen;
+}
+
+/**
+ * Chi-squared statistic for a frequency distribution against English.
+ */
+function chiSquared(observed, n) {
+  let chi = 0;
+  for (let i = 0; i < 26; i++) {
+    const expected = ENGLISH_FREQ[i] * n;
+    const diff = observed[i] - expected;
+    chi += (diff * diff) / expected;
+  }
+  return chi;
+}
+
+/**
+ * Find the best shift for a single group by minimizing chi-squared.
+ * Returns { shift, chi, freqs_for_all_shifts }.
+ */
+function findBestShift(group) {
+  const n = group.length;
+  const counts = new Array(26).fill(0);
+  for (let i = 0; i < n; i++) {
+    counts[group.charCodeAt(i) - 65]++;
+  }
+
+  let bestShift = 0;
+  let bestChi = Infinity;
+  const allChis = [];
+
+  for (let shift = 0; shift < 26; shift++) {
+    // Shift the counts: if key letter is `shift`, then decrypted[i] = (cipher[i] - shift) mod 26
+    const shifted = new Array(26).fill(0);
+    for (let i = 0; i < 26; i++) {
+      shifted[(i - shift + 26) % 26] = counts[i];
+    }
+    const chi = chiSquared(shifted, n);
+    allChis.push(chi);
+    if (chi < bestChi) {
+      bestChi = chi;
+      bestShift = shift;
+    }
+  }
+
+  // Build frequency profile for the group (raw counts)
+  return { shift: bestShift, chi: bestChi, allChis, counts };
+}
+
+/**
+ * Decrypt ciphertext with a given key (both uppercase strings).
+ */
+function decrypt(ciphertext, key) {
+  if (!key || key.length === 0) return "";
+  const keyUpper = key.toUpperCase().replace(/[^A-Z]/g, "");
+  if (keyUpper.length === 0) return "";
+  let result = "";
+  let ki = 0;
+  for (let i = 0; i < ciphertext.length; i++) {
+    const c = ciphertext.charCodeAt(i);
+    if (c >= 65 && c <= 90) {
+      const shift = keyUpper.charCodeAt(ki % keyUpper.length) - 65;
+      result += String.fromCharCode(((c - 65 - shift + 26) % 26) + 65);
+      ki++;
+    } else {
+      result += ciphertext[i];
+    }
+  }
+  return result;
+}
+
+// ---- UI Logic ----
+
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById("step" + i);
+    el.classList.remove("active", "done");
+    if (i < n) el.classList.add("done");
+    if (i === n) el.classList.add("active");
+  }
+}
+
+function analyzeKeyLength() {
+  const raw = document.getElementById("ciphertext").value;
+  cleanCiphertext = cleanText(raw);
+
+  if (cleanCiphertext.length < 20) {
+    alert("Please enter at least 20 characters of ciphertext.");
+    return;
+  }
+
+  const maxKeyLen = Math.min(30, Math.floor(cleanCiphertext.length / 3));
+  const results = [];
+
+  for (let kl = 1; kl <= maxKeyLen; kl++) {
+    const avgIoc = averageIoC(cleanCiphertext, kl);
+    results.push({ keyLen: kl, ioc: avgIoc });
+  }
+
+  // Sort by IoC descending
+  results.sort((a, b) => b.ioc - a.ioc);
+
+  // Auto-select the best
+  selectedKeyLength = results[0].keyLen;
+
+  // Build table
+  const englishIoC = 0.0667;
+  const maxIoC = results[0].ioc;
+
+  let html = "<table><tr><th>Key Length</th><th>Avg IoC</th><th></th></tr>";
+  for (const r of results.slice(0, 15)) {
+    const pct = Math.min(100, (r.ioc / englishIoC) * 100);
+    const sel = r.keyLen === selectedKeyLength ? " selected" : "";
+    html += `<tr class="clickable${sel}" onclick="selectKeyLength(${r.keyLen}, this)">
+      <td>${r.keyLen}</td>
+      <td>${r.ioc.toFixed(5)}</td>
+      <td><div class="bar-container"><div class="bar" style="width:${pct}%"></div></div></td>
+    </tr>`;
+  }
+  html += "</table>";
+
+  document.getElementById("keylength-results").innerHTML = html;
+  document.getElementById("panel-keylength").classList.remove("hidden");
+  setStep(2);
+}
+
+function selectKeyLength(kl, rowEl) {
+  selectedKeyLength = kl;
+  // Update selected row styling
+  const rows = rowEl.parentElement.querySelectorAll("tr");
+  rows.forEach(r => r.classList.remove("selected"));
+  rowEl.classList.add("selected");
+}
+
+function recoverKey() {
+  if (!selectedKeyLength || !cleanCiphertext) return;
+
+  const groups = splitIntoGroups(cleanCiphertext, selectedKeyLength);
+  const grid = document.getElementById("freq-grid");
+  let keyStr = "";
+
+  let html = "";
+  for (let p = 0; p < groups.length; p++) {
+    const result = findBestShift(groups[p]);
+    const letter = String.fromCharCode(65 + result.shift);
+    keyStr += letter;
+
+    // Build mini frequency bar chart
+    const maxCount = Math.max(...result.counts);
+    let barsHtml = "";
+    for (let i = 0; i < 26; i++) {
+      const h = maxCount > 0 ? Math.round((result.counts[i] / maxCount) * 50) : 0;
+      const highlight = i === result.shift ? " highlight" : "";
+      const lbl = String.fromCharCode(65 + i);
+      barsHtml += `<div class="freq-bar-col">
+        <div class="freq-bar${highlight}" style="height:${h}px"></div>
+        <span class="freq-label">${lbl}</span>
+      </div>`;
+    }
+
+    html += `<div class="freq-position">
+      <h3>Position ${p + 1}</h3>
+      <span class="best-shift">${letter}</span>
+      <span class="chi-details">(shift ${result.shift}, χ² = ${result.chi.toFixed(1)})</span>
+      <div class="freq-bars">${barsHtml}</div>
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+  document.getElementById("key-input").value = keyStr;
+  document.getElementById("panel-key").classList.remove("hidden");
+  setStep(3);
+  decryptWithKey();
+}
+
+function decryptWithKey() {
+  const key = document.getElementById("key-input").value.trim();
+  if (!key || !cleanCiphertext) return;
+
+  // Decrypt preserving original formatting
+  const raw = document.getElementById("ciphertext").value;
+  const result = decrypt(raw, key);
+  document.getElementById("output").value = result;
+  document.getElementById("panel-output").classList.remove("hidden");
+  setStep(4);
+}
+
+function copyOutput() {
+  const output = document.getElementById("output");
+  output.select();
+  document.execCommand("copy");
+  window.getSelection().removeRange(window.getSelection().getRangeAt(0));
+}
+
+function resetAll() {
+  selectedKeyLength = null;
+  cleanCiphertext = "";
+  document.getElementById("panel-keylength").classList.add("hidden");
+  document.getElementById("panel-key").classList.add("hidden");
+  document.getElementById("panel-output").classList.add("hidden");
+  document.getElementById("keylength-results").innerHTML = "";
+  document.getElementById("freq-grid").innerHTML = "";
+  document.getElementById("key-input").value = "";
+  document.getElementById("output").value = "";
+  setStep(1);
+}
+</script>
+</body>
+</html>
